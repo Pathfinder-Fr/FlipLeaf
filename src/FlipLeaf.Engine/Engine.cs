@@ -1,138 +1,94 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace FlipLeaf
 {
-    public partial class Engine
+    public class Engine
     {
-        private const string DefaultLayoutsFolder = "_layouts";
-        private const string DefaultOutputFolder = "_site";
+        private readonly SiteSettings _site;
+        private readonly RuntimeSettings _runtime;
+        private readonly RenderContext _context;
+        private readonly Serilog.ILogger _log;
+        private readonly IEnumerable<Pipelines.IRenderPipeline> _pipelines;
+        private readonly Pipelines.IRenderPipeline _defaultPipeline;
 
-        private readonly string _root;
-
-        private string _outputDir;
-
-        public Engine(string root)
+        public Engine(RenderContext ctx, SiteSettings site, RuntimeSettings runtime, Serilog.ILogger log, IEnumerable<Pipelines.IRenderPipeline> pipelines)
         {
-            _root = root;
+            _site = site;
+            _runtime = runtime;
+            _context = ctx;
+            _log = log;
+            _pipelines = pipelines;
+            _defaultPipeline = new Pipelines.CopyPipeline(ctx);
         }
 
-        public SiteSettings Site { get; set; } = new SiteSettings();
+        public SiteSettings Site { get; }
 
-        public void Init()
+        public void RenderAll()
         {
-            CompileConfig();
-        }
-
-        private void CompileConfig()
-        {
-            var path = Path.Combine(_root, "_config.yml");
-            if (!File.Exists(path))
-                return;
-
-            this.Site = Yaml.ParseConfig(path);
-        }
-
-        public void RenderAll(string outputDir = DefaultOutputFolder)
-        {
-            _outputDir = outputDir;
             RenderFolder(string.Empty);
         }
 
         private void RenderFolder(string directory)
         {
-            var dir = Path.Combine(_root, directory);
+            var srcDir = Path.Combine(_context.InputDir, directory);
+            var targetDir = Path.Combine(_context.InputDir, _context.OutputDir, directory);
 
-            var targetDir = Path.Combine(_root, _outputDir, directory);
             if (!Directory.Exists(targetDir))
             {
                 Directory.CreateDirectory(targetDir);
             }
 
-            foreach (var file in Directory.GetFiles(dir))
+            foreach (var file in Directory.GetFiles(srcDir))
             {
-                var fileName = Path.GetFileName(file);
-                var fileExtension = Path.GetExtension(file);
-
-                if (fileExtension == ".md")
-                {
-                    var targetPath = Path.Combine(targetDir, Path.ChangeExtension(fileName, ".html"));
-                    RenderToFile(Path.Combine(directory, fileName), targetPath);
-                }
-                else
-                {
-                    File.Copy(file, Path.Combine(targetDir, fileName), true);
-                }
+                RenderFile(Path.Combine(directory, Path.GetFileName(file)), Path.Combine(targetDir, Path.GetFileName(file)));
             }
 
-            foreach (var subDir in Directory.GetDirectories(dir))
+            foreach (var subDir in Directory.GetDirectories(srcDir))
             {
-                if (!string.IsNullOrEmpty(directory))
-                {
-                    RenderFolder(Path.Combine(directory, subDir));
-                }
-                else
-                {
-                    var directoryName = Path.GetFileName(subDir);
+                var directoryName = Path.GetFileName(subDir);
 
-                    if (string.Equals(directoryName, _outputDir, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-                    if (string.Equals(directoryName, DefaultLayoutsFolder, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    RenderFolder(Path.Combine(directory, subDir));
+                if (string.Equals(directoryName, _context.OutputDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
                 }
+
+                if (string.Equals(directoryName, _site.LayoutFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (directory.StartsWith("."))
+                {
+                    continue;
+                }
+
+                RenderFolder(Path.Combine(subDir, subDir));
             }
         }
 
-        public void RenderToFile(string pagePath, string targetPath)
+        private void RenderFile(string pagePath, string targetPath)
         {
-            // make absolute
-            var path = Path.Combine(_root, pagePath);
+            var path = Path.Combine(_context.InputDir, pagePath);
 
-            // render
-            var content = Render(path);
-
-            // write
-            File.WriteAllText(targetPath, content);
-        }
-
-        /// <summary>
-        /// Render the content of the page and returns the result.
-        /// </summary>
-        public string Render(string path)
-        {
-            var source = File.ReadAllText(path);
-
-            // 1) yaml
-            if (!Yaml.ParseHeader(ref source, out var pageContext))
+            // find pipeline
+            var pipeline = _pipelines.FirstOrDefault(x => x.Accept(path));
+            if (pipeline == null && _defaultPipeline.Accept(path))
             {
-                return null;
+                pipeline = _defaultPipeline;
             }
 
-            // 2) fluid
-            if (!Fluid.ParsePage(ref source, pageContext, Site, out var templateContext))
+            if (pipeline != null)
             {
-                return null;
-            }
+                // transform target path
+                targetPath = pipeline.TransformTargetPath(path, targetPath);
 
-            // 3) markdown
-            if (!Markdown.Parse(ref source))
-            {
-                return null;
+                // render
+                _log.Information("Rendering {Src} to {Dest}", path, targetPath);
+                pipeline.Render(path, targetPath);
             }
-
-            // 4) layout
-            if (!Fluid.ApplyLayout(ref source, templateContext, _root))
-            {
-                return null;
-            }
-
-            return source;
         }
     }
 }

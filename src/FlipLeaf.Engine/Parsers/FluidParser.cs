@@ -7,15 +7,17 @@ using Fluid;
 using Fluid.Ast;
 using Fluid.Tags;
 
-namespace FlipLeaf
+namespace FlipLeaf.Parsers
 {
-    public class FluidRenderer
+    public class FluidParser
     {
-        private readonly ProjectContext _project;
+        private readonly SiteSettings _settings;
+        private readonly RenderContext ctx;
 
-        public FluidRenderer(ProjectContext project)
+        public FluidParser(SiteSettings settings, RenderContext ctx)
         {
-            _project = project;
+            _settings = settings;
+            this.ctx = ctx;
         }
 
         public string ParseContent(string content, object pageContext, out TemplateContext context)
@@ -30,7 +32,7 @@ namespace FlipLeaf
             context = new TemplateContext { MemberAccessStrategy = new IgnoreCaseMemberAccessStrategy() };
             context.MemberAccessStrategy.Register<SiteSettings>();
             context.SetValue("page", pageContext);
-            context.SetValue("site", this._project.Settings);
+            context.SetValue("site", this._settings);
 
             return template.Render(context);
         }
@@ -46,7 +48,7 @@ namespace FlipLeaf
             if (Path.GetExtension(layoutFile) == "")
                 layoutFile += ".html";
 
-            var layoutText = File.ReadAllText(Path.Combine(this._project.Path, this._project.Settings.LayoutFolder, layoutFile));
+            var layoutText = File.ReadAllText(Path.Combine(this.ctx.InputDir, this._settings.LayoutFolder, layoutFile));
             context.AmbientValues.Add("Body", source);
             if (!ViewTemplate.TryParse(layoutText, out var layoutTemplate))
             {
@@ -60,18 +62,19 @@ namespace FlipLeaf
         {
             private Dictionary<string, IMemberAccessor> _map = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
 
-            public object Get(object obj, string name)
+
+            public IMemberAccessor GetAccessor(object obj, string name)
             {
                 // Look for specific property map
                 if (_map.TryGetValue(Key(obj.GetType(), name), out var getter))
                 {
-                    return getter.Get(obj, name);
+                    return getter;
                 }
 
                 // Look for a catch-all getter
                 if (_map.TryGetValue(Key(obj.GetType(), "*"), out getter))
                 {
-                    return getter.Get(obj, name);
+                    return getter;
                 }
 
                 return null;

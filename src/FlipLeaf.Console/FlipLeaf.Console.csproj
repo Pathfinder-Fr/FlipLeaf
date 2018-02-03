@@ -16,6 +16,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Autofac" Version="4.6.2" />
     <PackageReference Include="ILLink.Tasks" Version="0.1.4-preview-906439" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
   </ItemGroup>
 </Project>

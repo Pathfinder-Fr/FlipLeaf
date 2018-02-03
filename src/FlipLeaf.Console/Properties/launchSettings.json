@@ -2,7 +2,7 @@
   "profiles": {
     "FlipLeaf.Console": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\Projets\\Perso\\FlipLeaf\\sample"
+      "commandLineArgs": "..\\..\\sample"
     }
   }
 }
