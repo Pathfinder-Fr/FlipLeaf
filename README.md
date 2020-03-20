@@ -1,1 +1,1 @@
-Project has moved [here])(https://github.com/tbolon/flipleaf)
+Project has moved [here](https://github.com/tbolon/flipleaf)
