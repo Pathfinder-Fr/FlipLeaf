@@ -11,15 +11,14 @@ namespace FlipLeaf.Parsers
         public SiteSettings ParseConfig(string path)
         {
             var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(new CamelCaseNamingConvention())
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build();
 
             using (var file = File.OpenRead(path))
             using (var reader = new StreamReader(file))
             {
                 var parser = new Parser(reader);
-                parser.Expect<StreamStart>();
-
+                parser.Consume<StreamStart>();
                 return deserializer.Deserialize<SiteSettings>(parser);
             }
         }

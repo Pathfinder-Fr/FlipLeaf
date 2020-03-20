@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace FlipLeaf
+﻿namespace FlipLeaf
 {
     public class RenderContext
     {
@@ -23,6 +19,5 @@ namespace FlipLeaf
         public string OutputDir { get; }
 
         public string ConfigFile { get; }
-
     }
 }

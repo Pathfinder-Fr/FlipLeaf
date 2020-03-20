@@ -23,7 +23,7 @@ namespace FlipLeaf.Pipelines
 
         public string TransformTargetPath(string path, string outPath) => Path.ChangeExtension(outPath, ".html");
 
-        public async Task RenderAsync(string path, string outPath)
+        public async Task RenderAsync(string path, Stream output)
         {
             var content = File.ReadAllText(path);
 
@@ -44,8 +44,12 @@ namespace FlipLeaf.Pipelines
 
             // 4) layout
             content = await _fluid.ApplyLayoutAsync(content, templateContext).ConfigureAwait(false);
-            
-            File.WriteAllText(outPath, content);
+
+            // 5) output
+            using (var writer = new StreamWriter(output))
+            {
+                await writer.WriteLineAsync(content).ConfigureAwait(false);
+            }
         }
     }
 }

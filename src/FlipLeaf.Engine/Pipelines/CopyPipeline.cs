@@ -34,10 +34,12 @@ namespace FlipLeaf.Pipelines
 
         public string TransformTargetPath(string path, string outPath) => outPath;
 
-        public Task RenderAsync(string path, string outPath)
+        public async Task RenderAsync(string path, Stream output)
         {
-            File.Copy(path, outPath, true);
-            return Task.CompletedTask;
+            using (var input = new FileStream(path, FileMode.Open))
+            {
+                await input.CopyToAsync(output).ConfigureAwait(false);
+            }
         }
     }
 }

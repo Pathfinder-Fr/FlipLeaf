@@ -19,9 +19,9 @@ namespace FlipLeaf.Parsers
 
 
             int i;
-            parser.Expect<StreamStart>();
+            parser.Consume<StreamStart>();
 
-            if (!parser.Accept<DocumentStart>())
+            if (!parser.TryConsume<DocumentStart>(out _))
             {
                 return false;
             }
@@ -29,7 +29,7 @@ namespace FlipLeaf.Parsers
             var doc = deserializer.Deserialize(parser);
             pageContext = ConvertDoc(doc);
 
-            if (!parser.Accept<DocumentStart>())
+            if (!parser.TryConsume<DocumentStart>(out _))
             {
                 return false;
             }

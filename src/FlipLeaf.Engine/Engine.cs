@@ -88,7 +88,10 @@ namespace FlipLeaf
 
                 // render
                 _log.Information("Rendering {Src} to {Dest}", path, targetPath);
-                await pipeline.RenderAsync(path, targetPath);
+                using (var output = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                {
+                    await pipeline.RenderAsync(path, output);
+                }
             }
         }
     }
