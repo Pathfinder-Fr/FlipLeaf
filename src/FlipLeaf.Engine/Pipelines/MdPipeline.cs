@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace FlipLeaf.Pipelines
 {
@@ -22,7 +23,7 @@ namespace FlipLeaf.Pipelines
 
         public string TransformTargetPath(string path, string outPath) => Path.ChangeExtension(outPath, ".html");
 
-        public void Render(string path, string outPath)
+        public async Task RenderAsync(string path, string outPath)
         {
             var content = File.ReadAllText(path);
 
@@ -42,7 +43,7 @@ namespace FlipLeaf.Pipelines
             }
 
             // 4) layout
-            content = _fluid.ApplyLayout(content, templateContext);
+            content = await _fluid.ApplyLayoutAsync(content, templateContext).ConfigureAwait(false);
             
             File.WriteAllText(outPath, content);
         }

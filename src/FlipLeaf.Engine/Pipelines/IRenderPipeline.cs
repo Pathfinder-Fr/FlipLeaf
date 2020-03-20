@@ -1,4 +1,6 @@
-﻿namespace FlipLeaf.Pipelines
+﻿using System.Threading.Tasks;
+
+namespace FlipLeaf.Pipelines
 {
     public interface IRenderPipeline
     {
@@ -6,6 +8,6 @@
 
         string TransformTargetPath(string path, string targetPath);
 
-        void Render(string path, string targetPath);
+        Task RenderAsync(string path, string targetPath);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 using Autofac;
 using Serilog;
 
@@ -7,7 +8,7 @@ namespace FlipLeaf
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var builder = new ContainerBuilder();
 
@@ -35,7 +36,7 @@ namespace FlipLeaf
             using (var scope = container.BeginLifetimeScope())
             {
                 var engine = scope.Resolve<Engine>();
-                engine.RenderAll();
+                await engine.RenderAllAsync();
             }
 
             if (System.Diagnostics.Debugger.IsAttached)

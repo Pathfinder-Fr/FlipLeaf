@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace FlipLeaf.Pipelines
 {
@@ -33,9 +34,10 @@ namespace FlipLeaf.Pipelines
 
         public string TransformTargetPath(string path, string outPath) => outPath;
 
-        public void Render(string path, string outPath)
+        public Task RenderAsync(string path, string outPath)
         {
             File.Copy(path, outPath, true);
+            return Task.CompletedTask;
         }
     }
 }

@@ -37,9 +37,11 @@ namespace FlipLeaf.Parsers
             return template.Render(context);
         }
 
-        public string ApplyLayout(string source, TemplateContext context)
+        public async Task<string> ApplyLayoutAsync(string source, TemplateContext context)
         {
-            var layoutFile = context.GetValue("page").GetValue("layout", context).ToStringValue();
+            var page = context.GetValue("page");
+            var layoutFileValue = await page.GetValueAsync("layout", context);
+            var layoutFile = layoutFileValue.ToStringValue();
             if (layoutFile == null)
             {
                 return source;
@@ -62,6 +64,9 @@ namespace FlipLeaf.Parsers
         {
             private Dictionary<string, IMemberAccessor> _map = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
 
+            public MemberNameStrategy MemberNameStrategy { get; set; } = MemberNameStrategies.Default;
+
+            public bool IgnoreCasing { get; set; }
 
             public IMemberAccessor GetAccessor(object obj, string name)
             {
@@ -78,6 +83,11 @@ namespace FlipLeaf.Parsers
                 }
 
                 return null;
+            }
+
+            public IMemberAccessor GetAccessor(Type type, string name)
+            {
+                throw new NotImplementedException();
             }
 
             public void Register(Type type, string name, IMemberAccessor getter)
@@ -98,7 +108,7 @@ namespace FlipLeaf.Parsers
 
         public class RenderBodyTag : SimpleTag
         {
-            public override async Task<Completion> WriteToAsync(TextWriter writer, TextEncoder encoder, TemplateContext context)
+            public override async ValueTask<Completion> WriteToAsync(TextWriter writer, TextEncoder encoder, TemplateContext context)
             {
                 if (context.AmbientValues.TryGetValue("Body", out var body))
                 {

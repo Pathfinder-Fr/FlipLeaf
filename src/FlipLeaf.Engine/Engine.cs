@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace FlipLeaf
 {
@@ -26,12 +27,12 @@ namespace FlipLeaf
 
         public SiteSettings Site { get; }
 
-        public void RenderAll()
+        public Task RenderAllAsync()
         {
-            RenderFolder(string.Empty);
+            return RenderFolderAsync(string.Empty);
         }
 
-        private void RenderFolder(string directory)
+        private async Task RenderFolderAsync(string directory)
         {
             var srcDir = Path.Combine(_context.InputDir, directory);
             var targetDir = Path.Combine(_context.InputDir, _context.OutputDir, directory);
@@ -43,7 +44,7 @@ namespace FlipLeaf
 
             foreach (var file in Directory.GetFiles(srcDir))
             {
-                RenderFile(Path.Combine(directory, Path.GetFileName(file)), Path.Combine(targetDir, Path.GetFileName(file)));
+                await RenderFileAsync(Path.Combine(directory, Path.GetFileName(file)), Path.Combine(targetDir, Path.GetFileName(file))).ConfigureAwait(false);
             }
 
             foreach (var subDir in Directory.GetDirectories(srcDir))
@@ -65,11 +66,11 @@ namespace FlipLeaf
                     continue;
                 }
 
-                RenderFolder(Path.Combine(subDir, subDir));
+                await RenderFolderAsync(Path.Combine(subDir, subDir));
             }
         }
 
-        private void RenderFile(string pagePath, string targetPath)
+        private async Task RenderFileAsync(string pagePath, string targetPath)
         {
             var path = Path.Combine(_context.InputDir, pagePath);
 
@@ -87,7 +88,7 @@ namespace FlipLeaf
 
                 // render
                 _log.Information("Rendering {Src} to {Dest}", path, targetPath);
-                pipeline.Render(path, targetPath);
+                await pipeline.RenderAsync(path, targetPath);
             }
         }
     }
